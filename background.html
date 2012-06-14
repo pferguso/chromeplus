@@ -1,0 +1,72 @@
+<!DOCTYPE HTML>
+
+<html> <head> </head> <body> 
+
+
+
+<script>
+
+var bookNotFoundMsg = "This book is not carried by your library.";
+var bookAvailableMsg = "This book is currently available for check-out from your library.";
+var bookNotAvailableMsg = "This book is carried by your library, but not currently available for check-out.";
+
+function getBaseUrl() {
+  return 'http://iii.ocls.info/search/a?searchtype=i&searcharg=';
+}
+
+
+function checkAvailability(index, isbn, callback) {
+console.log('checkAvailability');
+  var xhr = new XMLHttpRequest();
+  xhr.onreadystatechange = function(data) {
+console.log(xhr.readyState);
+console.log(xhr.status);
+    if (xhr.readyState == 4) {
+      if (xhr.status == 200) {
+        var data = xhr.responseText;
+        var bookAvailable = new RegExp('CHECK SHELVES');
+        var notFound = new RegExp('No matches found');
+        var message;
+        var found;
+              
+        if (notFound.test(data)) {
+          found = false;
+          message = bookNotFoundMsg;
+        } else {
+          found = true;
+          if (bookAvailable.test(data)) {
+            message = bookAvailableMsg
+          } else {
+            message = bookNotAvailableMsg;
+          }
+        }
+
+        callback({"found":found,"message":message, "library_url" : getBaseUrl() + isbn, "index" : index });
+      } else {
+        callback(null);
+      }
+    } else {
+      // do nothing
+    }
+  }
+
+  var url = getBaseUrl() + isbn;
+  xhr.open('GET', url, true);
+  xhr.send();
+}
+
+function onRequest(request, sender, callback) {
+console.log('onRequest');
+  if (request.action == 'checkAvailability') {
+    checkAvailability(-1, request.isbn, callback);
+
+  } else {
+    alert("unrecognized request with action " + request.action);
+  }
+}
+
+
+chrome.extension.onRequest.addListener(onRequest);
+     
+</script>
+ </body> </html>
